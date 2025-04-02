@@ -4,66 +4,105 @@ This Terraform module provisions and manages SAP HANA Cloud resources on the SAP
 
 ## Requirements
 
-- Terraform v1.0 or higher
-- SAP BTP Provider for Terraform v1.3.0 or higher
+- Terraform >= 1.8
+- SAP BTP Provider for Terraform ~> 1.11.0
 - An SAP BTP account with sufficient permissions to manage resources
+- SAP HANA Cloud entitlements in your global account
 
-### Usage
+## Usage
 
-To use this module in your Terraform environment, you can clone it from the GitHub repository and reference it in your Terraform configuration like so:
+To use this module in your Terraform configuration:
 
 ```hcl
-module "sap_hana_cloud" {
-  source = "github.com/codeyogi911/terraform-sap-hana-cloud"
-
-  subaccount_id             = "<subaccount-id>"
-  service_name              = "hana"
-  plan_name                 = "hana-plan"
-  hana_cloud_tools_app_name = "hana-tools-app"
-  hana_cloud_tools_plan_name= "hana-tools-plan"
-  admins                    = ["admin@example.com"]
-  viewers                   = ["viewer@example.com"]
-  security_admins           = ["sec-admin@example.com"]
+module "hana_cloud" {
+  source        = "codeyogi911/hana-cloud/sap"
+  version       = "1.1.2"
+  
+  subaccount_id             = "your-subaccount-id"
   instance_name             = "my-hana-instance"
   memory                    = 32
   vcpu                      = 4
+  admins                    = ["admin@example.com"]
+  viewers                   = ["viewer@example.com"]
+  security_admins           = ["sec-admin@example.com"]
   whitelist_ips             = ["192.168.0.1"]
+}
+```
+
+### With Database Mappings (for CF or Kyma environments)
+
+```hcl
+module "hana_cloud" {
+  source        = "codeyogi911/hana-cloud/sap"
+  version       = "1.1.4"
+  
+  subaccount_id             = "your-subaccount-id"
+  instance_name             = "my-hana-instance"
   database_mappings         = [
-    # provide mappings for cf or kyma env
     {
-      organization_guid = # your cf org id
-      space_guid        = # your space guid
+      organization_guid = "your-cf-org-id"
+      space_guid        = "your-space-guid"
     }
   ]
 }
 ```
 
-### Inputs
+### Complete Example with Subaccount Creation
+
+```hcl
+resource "btp_subaccount" "this" {
+  name      = "my-subaccount"
+  subdomain = "my-subdomain"
+  region    = "eu10"
+}
+
+module "hana_cloud" {
+  source        = "codeyogi911/hana-cloud/sap"
+  version       = "1.1.2"
+  
+  instance_name = "hana-cloud"
+  subaccount_id = btp_subaccount.this.id
+  admins        = ["admin@example.com"]
+  whitelist_ips = ["0.0.0.0/0"]
+}
+```
+
+## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| `subaccount_id` | The ID of the SAP BTP subaccount. | `string` | n/a | yes |
-| `instance_name` | Name of the SAP HANA Cloud instance. | `string` | `hana-cloud` | no |
-| `hana_cloud_tools_app_name` | Application name for HANA Cloud tools. | `string` | `hana-cloud-tools` | no |
-| `hana_cloud_tools_plan_name` | Plan name for HANA Cloud tools. | `string` | `tools` | no |
-| `service_name` | The name of the service to be entitled and used. | `string` | `hana-cloud` | no |
-| `plan_name` | The name of the service plan for SAP HANA Cloud. | `string` | `hana-td` | no |
-| `admins` | List of admin user emails. | `list(string)` | `[]` | no |
-| `viewers` | List of viewer user emails. | `list(string)` | `[]` | no |
-| `security_admins` | List of security admin user emails. | `list(string)` | `[]` | no |
-| `memory` | Amount of memory allocated to the HANA instance in GB. | `number` | `32` | no |
-| `vcpu` | Number of virtual CPUs allocated to the instance. | `number` | `2` | no |
-| `whitelist_ips` | List of IP addresses whitelisted for access. | `list(string)` | `[]` | no |
-| `database_mappings` | Database mappings configuration. | `list(any)` | `null` | no |
+| `subaccount_id` | The ID of the SAP BTP subaccount | `string` | n/a | yes |
+| `instance_name` | Name of the SAP HANA Cloud instance | `string` | n/a | yes |
+| `service_name` | The name of the SAP HANA Cloud service | `string` | `"hana-cloud"` | no |
+| `plan_name` | The name of the SAP HANA Cloud plan | `string` | `"hana-td"` | no |
+| `hana_cloud_tools_app_name` | The name of the SAP HANA Cloud Tools application | `string` | `"hana-cloud-tools"` | no |
+| `hana_cloud_tools_plan_name` | The name of the SAP HANA Cloud Tools plan | `string` | `"tools"` | no |
+| `admins` | List of users to assign the SAP HANA Cloud Administrator role | `list(string)` | `null` | no |
+| `viewers` | List of users to assign the SAP HANA Cloud Viewer role | `list(string)` | `null` | no |
+| `security_admins` | List of users to assign the SAP HANA Cloud Security Administrator role | `list(string)` | `null` | no |
+| `memory` | The memory size of the SAP HANA Cloud instance in GB | `number` | `32` | no |
+| `vcpu` | The number of vCPUs of the SAP HANA Cloud instance | `number` | `2` | no |
+| `whitelist_ips` | The list of IP addresses to whitelist | `list(string)` | `[]` | no |
+| `database_mappings` | Database mappings for CF or Kyma environments | `list(object)` | `null` | no |
+| `labels` | The labels of the SAP HANA Cloud instance | `map(string)` | `{}` | no |
 
-### Outputs
+## Outputs
 
-This module does not output any values.
+This module does not currently export any outputs.
 
-### Contributing
+## Features
+
+- Provisions SAP HANA Cloud instances
+- Sets up required entitlements
+- Assigns role collections to users (Administrator, Viewer, Security Administrator)
+- Configures resource allocation (memory, vCPU)
+- Manages IP whitelisting for access control
+- Supports database mappings for Cloud Foundry and Kyma environments
+
+## Contributing
 
 Contributions to this module are welcome. Please ensure that your pull requests are well-documented and include test cases where applicable.
 
-### License
+## License
 
 Apache 2 Licensed. See [LICENSE](https://github.com/codeyogi911/terraform-sap-hana-cloud/blob/main/LICENSE) for full details.
