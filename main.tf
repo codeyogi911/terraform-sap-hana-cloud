@@ -76,7 +76,7 @@ data "btp_subaccount_service_plan" "my_hana_plan" {
 
 #Create or Update an SAP HANA Cloud database instance
 resource "btp_subaccount_service_instance" "my_sap_hana_cloud_instance" {
-  count = var.database_mappings == null ? 1 : 0
+  count          = var.database_mappings == null ? 1 : 0
   subaccount_id  = var.subaccount_id
   serviceplan_id = data.btp_subaccount_service_plan.my_hana_plan.id
   name           = var.instance_name
@@ -89,7 +89,7 @@ resource "btp_subaccount_service_instance" "my_sap_hana_cloud_instance" {
 }
 
 resource "btp_subaccount_service_instance" "my_sap_hana_cloud_instance_with_mappings" {
-  count = var.database_mappings == null ? 0 : 1
+  count          = var.database_mappings == null ? 0 : 1
   subaccount_id  = var.subaccount_id
   serviceplan_id = data.btp_subaccount_service_plan.my_hana_plan.id
   name           = var.instance_name

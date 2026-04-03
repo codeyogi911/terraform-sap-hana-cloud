@@ -34,5 +34,5 @@ variable "admins" {
 variable "region" {
   description = "The region of the SAP BTP Subaccount"
   type        = string
-  default = "eu10"
+  default     = "eu10"
 }
