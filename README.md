@@ -4,8 +4,10 @@ This Terraform module provisions and manages SAP HANA Cloud resources on the SAP
 
 ## Requirements
 
-- Terraform >= 1.8
-- SAP BTP Provider for Terraform ~> 1.11.0
+- Terraform >= 1.9
+- SAP BTP Provider for Terraform ~> 1.21.0
+
+Published Terraform Registry releases through 1.4.0 constrain SAP/btp to ~> 1.11.0. This repository targets SAP/btp 1.21.x; use a Git source or a future registry release that updates `required_providers` if you need that provider line. The configuration under `examples/` consumes the root module with `source = "../"` so it stays aligned with this constraint set.
 - An SAP BTP account with sufficient permissions to manage resources
 - SAP HANA Cloud entitlements in your global account
 
@@ -16,8 +18,8 @@ To use this module in your Terraform configuration:
 ```hcl
 module "hana_cloud" {
   source        = "codeyogi911/hana-cloud/sap"
-  version       = "1.1.2"
-  
+  version       = "1.4.0"
+
   subaccount_id             = "your-subaccount-id"
   instance_name             = "my-hana-instance"
   memory                    = 32
@@ -34,8 +36,8 @@ module "hana_cloud" {
 ```hcl
 module "hana_cloud" {
   source        = "codeyogi911/hana-cloud/sap"
-  version       = "1.1.4"
-  
+  version       = "1.4.0"
+
   subaccount_id             = "your-subaccount-id"
   instance_name             = "my-hana-instance"
   database_mappings         = [
@@ -58,8 +60,8 @@ resource "btp_subaccount" "this" {
 
 module "hana_cloud" {
   source        = "codeyogi911/hana-cloud/sap"
-  version       = "1.1.2"
-  
+  version       = "1.4.0"
+
   instance_name = "hana-cloud"
   subaccount_id = btp_subaccount.this.id
   admins        = ["admin@example.com"]

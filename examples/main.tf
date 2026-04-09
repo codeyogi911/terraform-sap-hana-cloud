@@ -5,8 +5,7 @@ resource "btp_subaccount" "this" {
 }
 
 module "hana_cloud" {
-  source        = "codeyogi911/hana-cloud/sap"
-  version       = "1.1.2"
+  source        = "../"
   instance_name = "hana-cloud"
   admins        = var.admins
   subaccount_id = btp_subaccount.this.id
