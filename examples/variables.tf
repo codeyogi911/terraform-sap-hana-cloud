@@ -1,38 +1,25 @@
-
-# Define the input variables
 variable "globacct" {
-  description = "The name of the SAP BTP Global Account"
-  type        = string
-}
-
-variable "username" {
-  description = "The username of the SAP BTP Global Account Administrator"
-  type        = string
-}
-
-variable "password" {
-  description = "The password of the SAP BTP Global Account Administrator"
+  description = "Subdomain of the SAP BTP global account."
   type        = string
 }
 
 variable "subaccount_name" {
-  description = "The name of the SAP BTP Subaccount"
+  description = "Name of the SAP BTP subaccount."
   type        = string
 }
 
 variable "subdomain" {
-  description = "The subdomain of the SAP BTP Subaccount"
+  description = "Subdomain of the SAP BTP subaccount."
   type        = string
 }
 
 variable "admins" {
-  description = "The list of email addresses of the SAP BTP Subaccount Administrators"
+  description = "Users given the SAP HANA Cloud Administrator role collection."
   type        = list(string)
-
 }
 
 variable "region" {
-  description = "The region of the SAP BTP Subaccount"
+  description = "Region of the SAP BTP subaccount."
   type        = string
   default     = "eu10"
 }
