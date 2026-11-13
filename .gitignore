@@ -32,3 +32,6 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Lock files belong to the root module that uses this module
+.terraform.lock.hcl

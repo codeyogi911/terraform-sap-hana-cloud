@@ -4,102 +4,122 @@ This Terraform module provisions and manages SAP HANA Cloud resources on the SAP
 
 ## Requirements
 
-- Terraform >= 1.9
-- SAP BTP Provider for Terraform 1.21.3
+- Terraform 1.12 or later
+- SAP/btp provider `>= 1.22.0, < 2.0.0` (tested with 1.26.0). Pin the exact version in your root module.
+- An SAP BTP subaccount you administer, with SAP HANA Cloud entitlements in the global account
 
-Registry module **1.4.0** and older constrained SAP/btp to ~> 1.11.0. Use **1.5.0** or newer for SAP/btp **1.21.3**. The `examples/` configuration uses `source = "../"` so it stays aligned with the root module’s `required_providers`.
-- An SAP BTP account with sufficient permissions to manage resources
-- SAP HANA Cloud entitlements in your global account
+Coming from 1.x? Read [CHANGELOG.md](CHANGELOG.md): the upgrade keeps your database.
 
 ## Usage
 
-To use this module in your Terraform configuration:
-
 ```hcl
 module "hana_cloud" {
-  source        = "codeyogi911/hana-cloud/sap"
-  version       = "1.5.0"
+  source  = "codeyogi911/hana-cloud/sap"
+  version = "~> 2.0"
 
-  subaccount_id             = "your-subaccount-id"
-  instance_name             = "my-hana-instance"
-  memory                    = 32
-  vcpu                      = 4
-  admins                    = ["admin@example.com"]
-  viewers                   = ["viewer@example.com"]
-  security_admins           = ["sec-admin@example.com"]
-  whitelist_ips             = ["192.168.0.1"]
+  subaccount_id   = btp_subaccount.this.id
+  instance_name   = "my-hana-instance"
+  memory          = 32
+  vcpu            = 2
+  admins          = ["admin@example.com"]
+  viewers         = ["viewer@example.com"]
+  security_admins = ["sec-admin@example.com"]
+  whitelist_ips   = ["203.0.113.0/24"]
+
+  timeouts = { create = "60m", update = "60m", delete = "30m" }
 }
 ```
 
-### With Database Mappings (for CF or Kyma environments)
+### Mapped to a Cloud Foundry space
 
 ```hcl
 module "hana_cloud" {
-  source        = "codeyogi911/hana-cloud/sap"
-  version       = "1.5.0"
+  source  = "codeyogi911/hana-cloud/sap"
+  version = "~> 2.0"
 
-  subaccount_id             = "your-subaccount-id"
-  instance_name             = "my-hana-instance"
-  database_mappings         = [
+  subaccount_id = btp_subaccount.this.id
+  instance_name = "my-hana-instance"
+  database_mappings = [
     {
-      organization_guid = "your-cf-org-id"
-      space_guid        = "your-space-guid"
+      organization_guid = data.cloudfoundry_org.org.id
+      space_guid        = cloudfoundry_space.space.id
     }
   ]
 }
 ```
 
-### Complete Example with Subaccount Creation
+### More database settings
 
 ```hcl
-resource "btp_subaccount" "this" {
-  name      = "my-subaccount"
-  subdomain = "my-subdomain"
-  region    = "eu10"
-}
-
 module "hana_cloud" {
-  source        = "codeyogi911/hana-cloud/sap"
-  version       = "1.5.0"
+  source  = "codeyogi911/hana-cloud/sap"
+  version = "~> 2.0"
 
-  instance_name = "hana-cloud"
-  subaccount_id = btp_subaccount.this.id
-  admins        = ["admin@example.com"]
-  whitelist_ips = ["0.0.0.0/0"]
+  subaccount_id    = btp_subaccount.this.id
+  instance_name    = "my-hana-instance"
+  storage          = 120
+  enabled_services = { scriptserver = true, docstore = true }
+  product_version  = { releaseCycle = "generally-available-quarterly", track = "2025.2" }
+
+  # Anything SAP HANA Cloud accepts that the module does not type yet
+  additional_parameters = { slaLevel = "standard" }
 }
 ```
 
+The module always asks SAP to generate the DBADMIN password (`generateSystemPassword`), so no password is written to Terraform state. Read it from a service binding or reset it in SAP HANA Cloud Central.
+
 ## Inputs
 
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| `subaccount_id` | The ID of the SAP BTP subaccount | `string` | n/a | yes |
-| `instance_name` | Name of the SAP HANA Cloud instance | `string` | n/a | yes |
-| `service_name` | The name of the SAP HANA Cloud service | `string` | `"hana-cloud"` | no |
-| `plan_name` | The name of the SAP HANA Cloud plan | `string` | `"hana-td"` | no |
-| `hana_cloud_tools_app_name` | The name of the SAP HANA Cloud Tools application | `string` | `"hana-cloud-tools"` | no |
-| `hana_cloud_tools_plan_name` | The name of the SAP HANA Cloud Tools plan | `string` | `"tools"` | no |
-| `admins` | List of users to assign the SAP HANA Cloud Administrator role | `list(string)` | `null` | no |
-| `viewers` | List of users to assign the SAP HANA Cloud Viewer role | `list(string)` | `null` | no |
-| `security_admins` | List of users to assign the SAP HANA Cloud Security Administrator role | `list(string)` | `null` | no |
-| `memory` | The memory size of the SAP HANA Cloud instance in GB | `number` | `32` | no |
-| `vcpu` | The number of vCPUs of the SAP HANA Cloud instance | `number` | `2` | no |
-| `whitelist_ips` | The list of IP addresses to whitelist | `list(string)` | `[]` | no |
-| `database_mappings` | Database mappings for CF or Kyma environments | `list(object)` | `null` | no |
-| `labels` | The labels of the SAP HANA Cloud instance | `map(string)` | `{}` | no |
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `subaccount_id` | ID of the SAP BTP subaccount (required) | `string` | n/a |
+| `instance_name` | Name of the SAP HANA Cloud instance (required) | `string` | n/a |
+| `create_instance` | Create the database; false manages only entitlements, tools and roles | `bool` | `true` |
+| `service_name` | Service offering | `string` | `"hana-cloud"` |
+| `plan_name` | Service plan | `string` | `"hana-td"` |
+| `hana_cloud_tools_app_name` | SAP HANA Cloud Central app | `string` | `"hana-cloud-tools"` |
+| `hana_cloud_tools_plan_name` | SAP HANA Cloud Central plan | `string` | `"tools"` |
+| `admins` | Users given SAP HANA Cloud Administrator | `list(string)` | `[]` |
+| `viewers` | Users given SAP HANA Cloud Viewer | `list(string)` | `[]` |
+| `security_admins` | Users given SAP HANA Cloud Security Administrator | `list(string)` | `[]` |
+| `user_origin` | Origin key of a custom identity provider for those users | `string` | `null` |
+| `memory` | Memory in GB (at least 15) | `number` | `32` |
+| `vcpu` | vCPUs | `number` | `2` |
+| `storage` | Disk storage in GB | `number` | `null` |
+| `whitelist_ips` | Allowed IPv4 addresses or CIDR ranges; `[]` allows none from outside BTP | `list(string)` | `[]` |
+| `database_mappings` | Cloud Foundry orgs and spaces the database is mapped to | `list(object)` | `[]` |
+| `enabled_services` | `scriptserver`, `docstore`, `dpserver` switches | `map(bool)` | `null` |
+| `service_stopped` | Stop (`true`) or start (`false`) the database | `bool` | `null` |
+| `product_version` | SAP HANA Cloud `productVersion` object | `map(string)` | `null` |
+| `additional_parameters` | Further instance parameters; typed inputs win | `any` | `{}` |
+| `labels` | Instance labels | `map(set(string))` | `{}` |
+| `timeouts` | `create`, `update`, `delete` durations | `object` | `null` (provider: 10 minutes) |
 
 ## Outputs
 
-This module does not currently export any outputs.
+| Name | Description |
+|------|-------------|
+| `instance_id` | ID of the service instance |
+| `instance_name` | Name of the service instance |
+| `dashboard_url` | The instance in SAP HANA Cloud Central |
+| `tools_url` | SAP HANA Cloud Central for the subaccount |
 
-## Features
+## Safety
 
-- Provisions SAP HANA Cloud instances
-- Sets up required entitlements
-- Assigns role collections to users (Administrator, Viewer, Security Administrator)
-- Configures resource allocation (memory, vCPU)
-- Manages IP whitelisting for access control
-- Supports database mappings for Cloud Foundry and Kyma environments
+The database carries `lifecycle { prevent_destroy = true }`. A plan that would replace or destroy it fails. To delete a database on purpose, take the module call out and add this to the calling module:
+
+```hcl
+removed {
+  from = module.hana_cloud.btp_subaccount_service_instance.my_sap_hana_cloud_instance
+  lifecycle {
+    destroy = true
+  }
+}
+```
+
+## Testing
+
+`terraform test` runs the suite in `tests/` against a mocked provider, so it needs no SAP BTP account. `tests/upgrade.tftest.hcl` builds state with module 1.5.0 and checks that 2.x keeps the same database.
 
 ## Contributing
 
